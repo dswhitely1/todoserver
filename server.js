@@ -8,7 +8,11 @@ const cors = require('cors');
 const users = require('./routes/api/users');
 
 const app = express();
-app.use(cors());
+app.use(
+	cors({
+		origin : 'https://www.donwhitely.com',
+	}),
+);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
