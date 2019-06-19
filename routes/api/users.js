@@ -9,8 +9,13 @@ const TodoUser = require('../../models/User');
 
 const validateRegisterInput = require('../../validation/register');
 const validateLoginInput = require('../../validation/login');
+const validateTaskInput = require('../../validation/task');
 
 router.get('/test', (req, res) => res.json({ msg: 'Users working' }));
+
+router.get('/tasks', passport.authenticate('jwt', { session: false }), (req, res) => {
+	TodoUser.findById({ _id: req.user.id }).then(user => res.json(user.tasks)).catch(err => console.log(err));
+});
 
 router.post('/register', (req, res) => {
 	const { errors, isValid } = validateRegisterInput(req.body);
@@ -30,6 +35,7 @@ router.post('/register', (req, res) => {
 		name     : req.body.name,
 		username : req.body.username,
 		password : req.body.password,
+		tasks    : [],
 	});
 
 	bcrypt.genSalt(10, (err, salt) => {
@@ -74,4 +80,59 @@ router.post('/login', (req, res) => {
 		});
 	});
 });
+
+router.post('/add-task', passport.authenticate('jwt', { session: false }), (req, res) => {
+	const { errors, isValid } = validateTaskInput(req.body);
+
+	if (!isValid) {
+		return res.status(400).json(errors);
+	}
+	TodoUser.findOne({ _id: req.user.id }).then(user => {
+		const newTask = {
+			todo : req.body.todo,
+		};
+		user.tasks = [ ...user.tasks, newTask ];
+		user.save().then(user => res.json(user));
+	});
+});
+
+router.put('/update-task/:taskId', passport.authenticate('jwt', { session: false }), (req, res) => {
+	const { errors, isValid } = validateTaskInput(req.body);
+
+	if (!isValid) {
+		return res.status(400).json(errors);
+	}
+	let updatedUser = {};
+	updatedUser = req.user;
+	const updatedTasks = updatedUser.tasks.map(task => {
+		if (task._id.toString() === req.params.taskId) {
+			const updatedTask = {
+				_id       : req.params.taskId,
+				todo      : req.body.todo,
+				date      : req.body.date,
+				completed : req.body.completed,
+			};
+			return updatedTask;
+		} else {
+			return task;
+		}
+	});
+	updatedUser.tasks = updatedTasks;
+	TodoUser.findOneAndUpdate({ _id: req.user.id }, { $set: updatedUser }, { new: true }).then(user => res.json(user));
+});
+
+router.put('/delete-task/:taskId', passport.authenticate('jwt', { session: false }), (req, res) => {
+	let updateUser = req.user;
+	const updatedTasks = updateUser.tasks.filter(task => task._id.toString() !== req.params.taskId);
+	updateUser.tasks = updatedTasks;
+	TodoUser.findOneAndUpdate({ _id: req.user.id }, { $set: updateUser }, { new: true }).then(user => res.json(user));
+});
+
+router.put('/delete-completed', passport.authenticate('jwt', { session: false }), (req, res) => {
+	let updateUser = req.user;
+	const updateTasks = updateUser.tasks.filter(task => !task.completed);
+	updateUser.tasks = updateTasks;
+	TodoUser.findOneAndUpdate({ _id: req.user.id }, { $set: updateUser }, { new: true }).then(user => res.json(user));
+});
+
 module.exports = router;

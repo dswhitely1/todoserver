@@ -17,7 +17,7 @@ app.use(cors());
 const db = process.env.DATABASE;
 
 mongoose
-	.connect(db, { useNewUrlParser: true })
+	.connect(db, { useNewUrlParser: true, useFindAndModify: false })
 	.then(() => console.log(`Database connected`))
 	.catch(err => console.log(err));
 

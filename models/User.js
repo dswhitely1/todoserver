@@ -14,6 +14,22 @@ const UserSchema = new Schema({
 		type     : String,
 		required : true,
 	},
+	tasks    : [
+		{
+			todo      : {
+				type     : String,
+				required : true,
+			},
+			date      : {
+				type    : Date,
+				default : Date.now,
+			},
+			completed : {
+				type    : Boolean,
+				default : false,
+			},
+		},
+	],
 });
 
 module.exports = User = mongoose.model('todousers', UserSchema);
